@@ -15,7 +15,7 @@ func Start() {
 
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Task Manager CLI")
-	fmt.Println("Commands: add title priority, delete task_id, edit task_id new_title, toggle task_id, list, quit")
+	fmt.Println("Commands:  add title priority, delete task_id, edit task_id new_title, toggle task_id, list, quit")
 
 	for {
 		fmt.Print("> ")
