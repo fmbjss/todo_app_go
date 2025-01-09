@@ -1,9 +1,14 @@
 package main
 
 import (
-	"todoapp/cli"
+	"log"
+	"net/http"
+	"todoapp/server"
+	"todoapp/store"
 )
 
 func main() {
-	cli.Start()
+	store := store.NewInMemoryTaskStore()
+	taskServer := server.NewTaskServer(store)
+	log.Fatal(http.ListenAndServe(":5000", taskServer))
 }

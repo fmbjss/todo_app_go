@@ -11,7 +11,7 @@ import (
 )
 
 func Start() {
-	memStore := &store.Store{}
+	store := &store.Store{}
 
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Task Manager CLI")
@@ -41,7 +41,8 @@ func Start() {
 				continue
 			}
 			id := uuid.New()
-			store.AddItem(memStore, id, title, p)
+
+			store.AddItem(id, title, p)
 			fmt.Printf("Task added with ID: %s\n", id)
 
 		case "delete":
@@ -54,7 +55,7 @@ func Start() {
 				fmt.Println("Invalid UUID format")
 				continue
 			}
-			err = store.DeleteItem(memStore, id)
+			err = store.DeleteItem(id)
 			if err != nil {
 				fmt.Println(err)
 			} else {
@@ -72,7 +73,7 @@ func Start() {
 				continue
 			}
 			newTitle := args[2]
-			err = store.EditTask(memStore, id, newTitle)
+			err = store.EditTask(id, newTitle)
 			if err != nil {
 				fmt.Println(err)
 			} else {
@@ -89,7 +90,7 @@ func Start() {
 				fmt.Println("Invalid UUID format")
 				continue
 			}
-			err = store.ToggleDone(memStore, id)
+			err = store.ToggleDone(id)
 			if err != nil {
 				fmt.Println(err)
 			} else {
@@ -97,7 +98,7 @@ func Start() {
 			}
 
 		case "list":
-			tasks := store.GetAllItems(memStore)
+			tasks := store.GetAllItems()
 			if len(tasks) == 0 {
 				fmt.Println("No tasks available.")
 			} else {

@@ -8,11 +8,11 @@ import (
 
 func TestStore(t *testing.T) {
 	t.Run("add task", func(t *testing.T) {
-		memStore := &Store{}
+		s := &Store{}
 
-		taskID := addTaskToStore(memStore, "Mow the lawn", Medium)
+		taskID := addTaskToStore(s, "Mow the lawn", Medium)
 
-		items := GetAllItems(memStore)
+		items := s.GetAllItems()
 		expectedTask := "Mow the lawn"
 		expectedPriority := Medium
 
@@ -35,12 +35,12 @@ func TestStore(t *testing.T) {
 
 		taskID := addTaskToStore(memStore, "Test Task to Delete", Low)
 
-		err := DeleteItem(memStore, taskID)
+		err := memStore.DeleteItem(taskID)
 		if err != nil {
 			t.Fatalf("expected no error but got: %v", err)
 		}
 
-		items := GetAllItems(memStore)
+		items := memStore.GetAllItems()
 		if len(items) != 0 {
 			t.Errorf("expected 0 tasks, got %d", len(items))
 		}
@@ -51,12 +51,12 @@ func TestStore(t *testing.T) {
 
 		taskID := addTaskToStore(memStore, "Test Task", Low)
 
-		err := EditTask(memStore, taskID, "Updated Test Task")
+		err := memStore.EditTask(taskID, "Updated Test Task")
 		if err != nil {
 			t.Fatalf("expected no error but got: %v", err)
 		}
 
-		items := GetAllItems(memStore)
+		items := memStore.GetAllItems()
 		if len(items) != 1 {
 			t.Fatalf("expected 1 task, got %d", len(items))
 		}
@@ -70,12 +70,12 @@ func TestStore(t *testing.T) {
 
 		taskID := addTaskToStore(memStore, "Test Task", Low)
 
-		err := ToggleDone(memStore, taskID)
+		err := memStore.ToggleDone(taskID)
 		if err != nil {
 			t.Fatalf("expected no error but got: %v", err)
 		}
 
-		items := GetAllItems(memStore)
+		items := memStore.GetAllItems()
 		if len(items) != 1 {
 			t.Fatalf("expected 1 task, got %d", len(items))
 		}
@@ -84,7 +84,7 @@ func TestStore(t *testing.T) {
 		}
 
 		// Toggle it back to false
-		err = ToggleDone(memStore, taskID)
+		err = memStore.ToggleDone(taskID)
 		if err != nil {
 			t.Fatalf("expected no error but got: %v", err)
 		}
@@ -96,6 +96,6 @@ func TestStore(t *testing.T) {
 
 func addTaskToStore(memStore *Store, title string, priority Priority) uuid.UUID {
 	taskID := uuid.New()
-	AddItem(memStore, taskID, title, priority)
+	memStore.AddItem(taskID, title, priority)
 	return taskID
 }

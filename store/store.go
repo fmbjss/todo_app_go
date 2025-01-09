@@ -2,6 +2,7 @@ package store
 
 import (
 	"errors"
+	"sync"
 
 	"github.com/google/uuid"
 )
@@ -21,11 +22,21 @@ type Task struct {
 	Done     bool
 }
 
-type Store struct {
+type InMemoryTaskStore struct {
 	tasks []Task
+	mu    sync.Mutex
 }
 
-func AddItem(s *Store, id uuid.UUID, t string, p Priority) {
+func NewInMemoryTaskStore() *InMemoryTaskStore {
+	return &InMemoryTaskStore{
+		tasks: []Task{},
+		mu:    sync.Mutex{},
+	}
+}
+
+func (s *InMemoryTaskStore) AddItem(id uuid.UUID, t string, p Priority) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	task := Task{
 		ID:       id,
 		Title:    t,
@@ -35,7 +46,10 @@ func AddItem(s *Store, id uuid.UUID, t string, p Priority) {
 	s.tasks = append(s.tasks, task)
 }
 
-func DeleteItem(s *Store, id uuid.UUID) error {
+func (s *InMemoryTaskStore) DeleteItem(id uuid.UUID) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	for i, task := range s.tasks {
 		if task.ID == id {
 			s.tasks = append(s.tasks[:i], s.tasks[i+1:]...)
@@ -45,7 +59,10 @@ func DeleteItem(s *Store, id uuid.UUID) error {
 	return errors.New("task not found")
 }
 
-func EditTask(s *Store, id uuid.UUID, t string) error {
+func (s *InMemoryTaskStore) EditTask(id uuid.UUID, t string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	for i, task := range s.tasks {
 		if task.ID == id {
 			s.tasks[i].Title = t
@@ -55,7 +72,10 @@ func EditTask(s *Store, id uuid.UUID, t string) error {
 	return errors.New("task not found")
 }
 
-func ToggleDone(s *Store, id uuid.UUID) error {
+func (s *InMemoryTaskStore) ToggleDone(id uuid.UUID) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	for i, task := range s.tasks {
 		if task.ID == id {
 			s.tasks[i].Done = !s.tasks[i].Done
@@ -65,6 +85,9 @@ func ToggleDone(s *Store, id uuid.UUID) error {
 	return errors.New("task not found")
 }
 
-func GetAllItems(memStore *Store) []Task {
-	return memStore.tasks
+func (s *InMemoryTaskStore) GetAllItems() []Task {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	return s.tasks
 }
