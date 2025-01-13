@@ -10,8 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func Start() {
-	store := &store.Store{}
+func Start(store *store.InMemoryStore) {
 
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Task Manager CLI")
@@ -42,8 +41,12 @@ func Start() {
 			}
 			id := uuid.New()
 
-			store.AddItem(id, title, p)
-			fmt.Printf("Task added with ID: %s\n", id)
+			err := store.AddItem(id, title, p)
+			if err != nil {
+				fmt.Printf("Error adding task: %s\n", err)
+			} else {
+				fmt.Printf("Task added with ID: %s\n", id)
+			}
 
 		case "delete":
 			if len(args) < 2 {
