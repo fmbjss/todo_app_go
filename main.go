@@ -2,8 +2,12 @@ package main
 
 import (
 	"todoapp/cli"
+	"todoapp/store"
 )
 
 func main() {
-	cli.Start()
+	s := store.NewInMemoryStore()
+
+	cli.Start(s)
+
 }

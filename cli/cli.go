@@ -10,8 +10,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func Start() {
-	memStore := &store.Store{}
+func Start(store *store.InMemoryStore) {
 
 	scanner := bufio.NewScanner(os.Stdin)
 	fmt.Println("Task Manager CLI")
@@ -41,8 +40,13 @@ func Start() {
 				continue
 			}
 			id := uuid.New()
-			store.AddItem(memStore, id, title, p)
-			fmt.Printf("Task added with ID: %s\n", id)
+
+			err := store.AddItem(id, title, p)
+			if err != nil {
+				fmt.Printf("Error adding task: %s\n", err)
+			} else {
+				fmt.Printf("Task added with ID: %s\n", id)
+			}
 
 		case "delete":
 			if len(args) < 2 {
@@ -54,7 +58,7 @@ func Start() {
 				fmt.Println("Invalid UUID format")
 				continue
 			}
-			err = store.DeleteItem(memStore, id)
+			err = store.DeleteItem(id)
 			if err != nil {
 				fmt.Println(err)
 			} else {
@@ -72,7 +76,7 @@ func Start() {
 				continue
 			}
 			newTitle := args[2]
-			err = store.EditTask(memStore, id, newTitle)
+			err = store.EditTask(id, newTitle)
 			if err != nil {
 				fmt.Println(err)
 			} else {
@@ -89,7 +93,7 @@ func Start() {
 				fmt.Println("Invalid UUID format")
 				continue
 			}
-			err = store.ToggleDone(memStore, id)
+			err = store.ToggleDone(id)
 			if err != nil {
 				fmt.Println(err)
 			} else {
@@ -97,7 +101,7 @@ func Start() {
 			}
 
 		case "list":
-			tasks := store.GetAllItems(memStore)
+			tasks := store.GetAllItems()
 			if len(tasks) == 0 {
 				fmt.Println("No tasks available.")
 			} else {
