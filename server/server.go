@@ -9,10 +9,10 @@ import (
 )
 
 type TaskServer struct {
-	store *store.InMemoryTaskStore
+	store *store.InMemoryStore
 }
 
-func NewTaskServer(store *store.InMemoryTaskStore) *TaskServer {
+func NewTaskServer(store *store.InMemoryStore) *TaskServer {
 	return &TaskServer{store: store}
 }
 
@@ -33,7 +33,10 @@ func (s *TaskServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (s *TaskServer) getTasks(w http.ResponseWriter) {
 	tasks := s.store.GetAllItems()
-	json.NewEncoder(w).Encode(tasks)
+	err := json.NewEncoder(w).Encode(tasks)
+	if err != nil {
+		return
+	}
 }
 
 func (s *TaskServer) addTask(w http.ResponseWriter, r *http.Request) {
@@ -45,7 +48,10 @@ func (s *TaskServer) addTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
-	s.store.AddItem(uuid.New(), task.Title, task.Priority)
+	err := s.store.AddItem(uuid.New(), task.Title, task.Priority)
+	if err != nil {
+		http.Error(w, "Failed to add item. Internal error", http.StatusInternalServerError)
+	}
 	w.WriteHeader(http.StatusCreated)
 }
 
