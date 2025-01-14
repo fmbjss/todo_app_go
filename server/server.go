@@ -1,11 +1,12 @@
 package server
 
 import (
-	"encoding/json"
-	"net/http"
-	"todoapp/store"
-
 	"github.com/google/uuid"
+	"html/template"
+	"log"
+	"net/http"
+	"path/filepath"
+	"todoapp/store"
 )
 
 type TaskServer struct {
@@ -16,74 +17,131 @@ func NewTaskServer(store *store.InMemoryStore) *TaskServer {
 	return &TaskServer{store: store}
 }
 
-func (s *TaskServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodGet:
-		s.getTasks(w)
-	case http.MethodPost:
-		s.addTask(w, r)
-	case http.MethodPut:
-		s.editTask(w, r)
-	case http.MethodDelete:
-		s.deleteTask(w, r)
-	default:
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+func LoadTemplate() (*template.Template, error) {
+	tmplPath := filepath.Join("server", "todo_app.html")
+
+	return template.ParseFiles(tmplPath)
+}
+
+func (s *TaskServer) renderTasksPage(w http.ResponseWriter) {
+	tasks := s.store.GetAllItems()
+	tmpl, err := LoadTemplate()
+	if err != nil {
+		http.Error(w, "Error loading template", http.StatusInternalServerError)
+		return
+	}
+	err = tmpl.Execute(w, tasks)
+	if err != nil {
+		http.Error(w, "Error rendering tasks", http.StatusInternalServerError)
 	}
 }
 
-func (s *TaskServer) getTasks(w http.ResponseWriter) {
-	tasks := s.store.GetAllItems()
-	err := json.NewEncoder(w).Encode(tasks)
+func ParseID(r *http.Request) (uuid.UUID, error) {
+	idStr := r.FormValue("ID")
+	taskID, err := uuid.Parse(idStr)
 	if err != nil {
-		return
+		return uuid.UUID{}, err
 	}
+	return taskID, nil
+}
+
+func (s *TaskServer) home(w http.ResponseWriter, _ *http.Request) {
+	s.renderTasksPage(w)
 }
 
 func (s *TaskServer) addTask(w http.ResponseWriter, r *http.Request) {
-	var task struct {
-		Title    string         `json:"title"`
-		Priority store.Priority `json:"priority"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		http.Error(w, "Bad request", http.StatusBadRequest)
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Error parsing form", http.StatusBadRequest)
 		return
 	}
-	err := s.store.AddItem(uuid.New(), task.Title, task.Priority)
-	if err != nil {
-		http.Error(w, "Failed to add item. Internal error", http.StatusInternalServerError)
-	}
-	w.WriteHeader(http.StatusCreated)
-}
 
-func (s *TaskServer) editTask(w http.ResponseWriter, r *http.Request) {
-	id, err := uuid.Parse(r.URL.Query().Get("id"))
-	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
+	task := store.Task{
+		ID:       uuid.New(),
+		Title:    r.FormValue("title"),
+		Priority: store.Priority(r.FormValue("priority")),
+	}
+
+	if err := s.store.AddItem(task.ID, task.Title, task.Priority); err != nil {
+		http.Error(w, "Error adding task", http.StatusInternalServerError)
 		return
 	}
-	var task struct {
-		Title string `json:"title"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
-	if err := s.store.EditTask(id, task.Title); err != nil {
-		http.Error(w, "Task not found", http.StatusNotFound)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func (s *TaskServer) deleteTask(w http.ResponseWriter, r *http.Request) {
-	id, err := uuid.Parse(r.URL.Query().Get("id"))
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Error parsing form", http.StatusBadRequest)
+		return
+	}
+
+	taskID, err := ParseID(r)
 	if err != nil {
-		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		http.Error(w, "Invalid task ID", http.StatusBadRequest)
 		return
 	}
-	if err := s.store.DeleteItem(id); err != nil {
-		http.Error(w, "Task not found", http.StatusNotFound)
+
+	if err := s.store.DeleteItem(taskID); err != nil {
+		http.Error(w, "Error deleting task", http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (s *TaskServer) toggleDone(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Error parsing form", http.StatusBadRequest)
+		return
+	}
+
+	taskID, err := ParseID(r)
+	if err != nil {
+		http.Error(w, "Invalid task ID", http.StatusBadRequest)
+		return
+	}
+
+	if err := s.store.ToggleDone(taskID); err != nil {
+		http.Error(w, "Error toggling task", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func (s *TaskServer) edit(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Error parsing form", http.StatusBadRequest)
+		return
+	}
+
+	taskID, err := ParseID(r)
+	if err != nil {
+		http.Error(w, "Invalid task ID", http.StatusBadRequest)
+		return
+	}
+
+	taskTitle := r.FormValue("title")
+	if err := s.store.EditTask(taskID, taskTitle); err != nil {
+		http.Error(w, "Error editing task", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func Start(store *store.InMemoryStore) {
+	log.Println("Web API server is running on http://localhost:8080")
+
+	taskServer := NewTaskServer(store)
+	http.HandleFunc("/", taskServer.home)
+	http.HandleFunc("/add", taskServer.addTask)
+	http.HandleFunc("/delete", taskServer.deleteTask)
+	http.HandleFunc("/toggle", taskServer.toggleDone)
+	http.HandleFunc("/edit", taskServer.edit)
+
+	err := http.ListenAndServe(":8080", nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

@@ -9,10 +9,10 @@ import (
 )
 
 func TestStore(t *testing.T) {
+	c := Config{LoadFromFile: false}
+
 	t.Run("add task", func(t *testing.T) {
-
-		store := NewInMemoryStore()
-
+		store := NewInMemoryStore(c)
 		taskID := uuid.New()
 		taskTitle := "Test Task"
 		taskPriority := High
@@ -42,9 +42,7 @@ func TestStore(t *testing.T) {
 	})
 
 	t.Run("edit task", func(t *testing.T) {
-
-		store := NewInMemoryStore()
-
+		store := NewInMemoryStore(c)
 		taskID := uuid.New()
 
 		err := store.AddItem(taskID, "Test Task", Low)
@@ -66,7 +64,7 @@ func TestStore(t *testing.T) {
 		}
 	})
 	t.Run("delete task", func(t *testing.T) {
-		store := NewInMemoryStore()
+		store := NewInMemoryStore(c)
 		taskID := uuid.New()
 		err := store.AddItem(taskID, "Test Task", Low)
 		if err != nil {
@@ -85,7 +83,7 @@ func TestStore(t *testing.T) {
 
 	})
 	t.Run("toggle tasks", func(t *testing.T) {
-		store := NewInMemoryStore()
+		store := NewInMemoryStore(c)
 		taskID := uuid.New()
 		err := store.AddItem(taskID, "Test Task", Low)
 		if err != nil {
@@ -109,9 +107,10 @@ func TestStore(t *testing.T) {
 }
 
 func BenchmarkStoreOperations(b *testing.B) {
-	store := NewInMemoryStore()
+	c := Config{LoadFromFile: false}
 
 	b.Run("AddItem", func(b *testing.B) {
+		store := NewInMemoryStore(c)
 		b.RunParallel(func(pb *testing.PB) {
 			for pb.Next() {
 				taskID := uuid.New()
@@ -126,6 +125,7 @@ func BenchmarkStoreOperations(b *testing.B) {
 	})
 
 	b.Run("EditItem", func(b *testing.B) {
+		store := NewInMemoryStore(c)
 		taskIDs := make([]uuid.UUID, b.N)
 		for i := 0; i < b.N; i++ {
 			taskID := uuid.New()
@@ -151,6 +151,7 @@ func BenchmarkStoreOperations(b *testing.B) {
 	})
 
 	b.Run("ToggleDone", func(b *testing.B) {
+		store := NewInMemoryStore(c)
 		taskIDs := make([]uuid.UUID, b.N)
 		for i := 0; i < b.N; i++ {
 			taskID := uuid.New()
@@ -176,6 +177,7 @@ func BenchmarkStoreOperations(b *testing.B) {
 	})
 
 	b.Run("DeleteItem", func(b *testing.B) {
+		store := NewInMemoryStore(c)
 		taskIDs := make([]uuid.UUID, b.N)
 		for i := 0; i < b.N; i++ {
 			taskID := uuid.New()

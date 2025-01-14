@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo App</title>
+    <style>
+        body {
+            background-color: #121212;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #676464;
+        }
+
+        .container {
+            background-color: #1e1e1e;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            width: 90%;
+            max-width: 800px;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #a19b9b;
+            font-size: 24px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #333;
+        }
+
+        th {
+            background-color: #333;
+            color: #9e9c9c;
+        }
+
+        button {
+            background-color: #654a87;
+            color: #8a8a8a;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background-color: #612988;
+        }
+
+        input[type="text"], select {
+            background-color: #333;
+            color: #d3cfcf;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #555;
+            width: 200px;
+            margin-bottom: 10px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .task-form {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+        }
+
+        .task-form input {
+            margin-right: 10px;
+        }
+
+        .empty-message {
+            text-align: center;
+            font-style: italic;
+            color: #bbb;
+        }
+
+        .task-form button {
+            background-color: #376fb3;
+        }
+
+        .task-form button:hover {
+            background-color: #1665af;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Todo List</h1>
+
+    <table>
+        <tr>
+            <th>Task</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+        {{range .}}
+        <tr>
+            <td>
+                <form action="/edit" method="POST" style="display:inline;">
+                    <label>
+                        <input type="text" name="title" value="{{.Title}}" required>
+                    </label>
+                    <input type="hidden" name="ID" value="{{.ID}}">
+                    <button type="submit">Rename</button>
+                </form>
+            </td>
+            <td>{{.Priority}}</td>
+            <td>{{if .Done}}Done{{else}}To do!{{end}}</td>
+            <td>
+                <form action="/toggle" method="POST" style="display:inline;">
+                    <input type="hidden" name="ID" value="{{.ID}}">
+                    <button type="submit">{{if .Done}}Mark as To Do{{else}}Mark as Done{{end}}</button>
+                </form>
+
+                <form action="/delete" method="POST" style="display:inline;">
+                    <input type="hidden" name="ID" value="{{.ID}}">
+                    <button type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {{else}}
+        <tr>
+            <td colspan="5" class="empty-message">No tasks available</td>
+        </tr>
+        {{end}}
+    </table>
+
+    <hr>
+
+    <h2>Add a new task</h2>
+    <form action="/add" method="POST">
+        <div class="task-form">
+            <label>Title:</label>
+            <label>
+                <input type="text" name="title" required>
+            </label>
+
+            <label>Priority:</label>
+            <label>
+                <select name="priority">
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                </select>
+            </label>
+            <button type="submit">Add Task</button>
+        </div>
+    </form>
+</div>
+
+</body>
+</html>
