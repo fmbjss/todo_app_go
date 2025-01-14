@@ -1,8 +1,10 @@
 package store
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/google/uuid"
@@ -16,11 +18,14 @@ const (
 	High   Priority = "High"
 )
 
+type Config struct {
+	LoadFromFile bool
+}
 type Task struct {
-	ID       uuid.UUID
-	Title    string
-	Priority Priority
-	Done     bool
+	ID       uuid.UUID `json:"ID"`
+	Title    string    `json:"Title"`
+	Priority Priority  `json:"Priority"`
+	Done     bool      `json:"Done"`
 }
 
 type TaskOperation struct {
@@ -36,13 +41,18 @@ type InMemoryStore struct {
 	mu          sync.Mutex
 	taskChannel chan TaskOperation
 	stopChannel chan struct{}
+	filePath    string
 }
 
-func NewInMemoryStore() *InMemoryStore {
+func NewInMemoryStore(config Config) *InMemoryStore {
 	store := &InMemoryStore{
 		tasks:       []Task{},
 		taskChannel: make(chan TaskOperation),
 		stopChannel: make(chan struct{}),
+		filePath:    "tasks.json",
+	}
+	if config.LoadFromFile {
+		store.loadTasksFromFile()
 	}
 	go store.processTasks()
 	return store
@@ -99,7 +109,7 @@ func (s *InMemoryStore) processTasks() {
 				found := false
 				for i, task := range s.tasks {
 					if task.ID == op.ID {
-						s.tasks[i].Done = true
+						s.tasks[i].Done = !s.tasks[i].Done
 						found = true
 						break
 					}
@@ -114,7 +124,6 @@ func (s *InMemoryStore) processTasks() {
 			}
 
 		case <-s.stopChannel:
-			fmt.Println("case <- s.stopChannel")
 			close(s.taskChannel)
 			return
 		}
@@ -162,4 +171,62 @@ func (s *InMemoryStore) ToggleDone(id uuid.UUID) error {
 		Result: result,
 	}
 	return <-result
+}
+
+type TaskFile struct {
+	Tasks []Task `json:"tasks"`
+}
+
+func (s *InMemoryStore) loadTasksFromFile() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	file, err := os.Open(s.filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			s.tasks = []Task{}
+			return
+		}
+		panic(err)
+	}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			panic(err)
+		}
+	}(file)
+
+	var taskFile TaskFile
+	decoder := json.NewDecoder(file)
+	if err := decoder.Decode(&taskFile); err != nil {
+		panic(err)
+	}
+
+	s.tasks = taskFile.Tasks
+}
+
+func (s *InMemoryStore) SaveTasksToFile() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	file, err := os.Create(s.filePath)
+	if err != nil {
+		panic(err)
+	}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+
+		}
+	}(file)
+
+	taskFile := TaskFile{
+		Tasks: s.tasks,
+	}
+
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(taskFile); err != nil {
+		panic(err)
+	}
 }
