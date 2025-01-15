@@ -101,7 +101,7 @@ func Start(store *store.InMemoryStore) {
 			}
 
 		case "list":
-			tasks := store.GetAllItems()
+			tasks, _ := store.GetAllItems()
 			if len(tasks) == 0 {
 				fmt.Println("No tasks available.")
 			} else {

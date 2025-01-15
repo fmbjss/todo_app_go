@@ -22,7 +22,7 @@ func TestStore(t *testing.T) {
 			t.Errorf("Error adding task: %s", err)
 		}
 
-		tasks := store.GetAllItems()
+		tasks, _ := store.GetAllItems()
 
 		if len(tasks) != 1 {
 			t.Errorf("expected 1 task, got %d", len(tasks))
@@ -54,7 +54,7 @@ func TestStore(t *testing.T) {
 			t.Fatalf("expected no error, got %s", err)
 		}
 
-		tasks := store.GetAllItems()
+		tasks, _ := store.GetAllItems()
 
 		if len(tasks) != 1 {
 			t.Errorf("expected 1 task, got %d", len(tasks))
@@ -76,7 +76,7 @@ func TestStore(t *testing.T) {
 			t.Errorf("Error deleting task: %s", err)
 		}
 
-		tasks := store.GetAllItems()
+		tasks, _ := store.GetAllItems()
 		if len(tasks) != 0 {
 			t.Errorf("expected 0 task, got %d", len(tasks))
 		}
@@ -95,7 +95,7 @@ func TestStore(t *testing.T) {
 			t.Errorf("Error toggling task: %s", err)
 		}
 
-		tasks := store.GetAllItems()
+		tasks, _ := store.GetAllItems()
 		if len(tasks) != 1 {
 			t.Errorf("expected 1 task, got %d", len(tasks))
 		}
