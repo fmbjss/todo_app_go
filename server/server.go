@@ -1,19 +1,20 @@
 package server
 
 import (
-	"github.com/google/uuid"
 	"html/template"
 	"log"
 	"net/http"
 	"path/filepath"
 	"todoapp/store"
+
+	"github.com/google/uuid"
 )
 
 type TaskServer struct {
-	store *store.InMemoryStore
+	store store.Store
 }
 
-func NewTaskServer(store *store.InMemoryStore) *TaskServer {
+func NewTaskServer(store store.Store) *TaskServer {
 	return &TaskServer{store: store}
 }
 
@@ -24,7 +25,13 @@ func LoadTemplate() (*template.Template, error) {
 }
 
 func (s *TaskServer) renderTasksPage(w http.ResponseWriter) {
-	tasks := s.store.GetAllItems()
+
+	tasks, err := s.store.GetAllItems()
+	if err != nil {
+		log.Println("Error loading tasks")
+		return
+	}
+
 	tmpl, err := LoadTemplate()
 	if err != nil {
 		http.Error(w, "Error loading template", http.StatusInternalServerError)
@@ -130,7 +137,7 @@ func (s *TaskServer) edit(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
-func Start(store *store.InMemoryStore) {
+func Start(store store.Store) {
 	log.Println("Web API server is running on http://localhost:8080")
 
 	taskServer := NewTaskServer(store)
@@ -142,6 +149,6 @@ func Start(store *store.InMemoryStore) {
 
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 }

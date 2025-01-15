@@ -14,14 +14,14 @@ func main() {
 	signal.Notify(killChan, os.Interrupt, syscall.SIGTERM)
 
 	c := store.Config{LoadFromFile: true}
-	s := store.NewInMemoryStore(c)
+
+	//s := store.NewInMemoryStore(c)
+	s, _ := store.NewPostgresStore(c)
 
 	go server.Start(s)
 
 	<-killChan
 
-	s.SaveTasksToFile()
-
-	fmt.Println("Saving list to tasks.json")
+	//s.SaveTasksToFile()
 	fmt.Println("Server shut down ...")
 }

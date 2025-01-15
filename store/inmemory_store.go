@@ -58,8 +58,8 @@ func NewInMemoryStore(config Config) *InMemoryStore {
 	return store
 }
 
-func (s *InMemoryStore) GetAllItems() []Task {
-	return s.tasks
+func (s *InMemoryStore) GetAllItems() ([]Task, error) {
+	return s.tasks, nil
 }
 
 func (s *InMemoryStore) processTasks() {
@@ -118,6 +118,7 @@ func (s *InMemoryStore) processTasks() {
 					err = errors.New("task not found")
 				}
 			}
+
 			if op.Result != nil {
 				op.Result <- err
 				close(op.Result)
