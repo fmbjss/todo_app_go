@@ -10,32 +10,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type Priority string
-
-const (
-	Low    Priority = "Low"
-	Medium Priority = "Medium"
-	High   Priority = "High"
-)
-
-type Config struct {
-	LoadFromFile bool
-}
-type Task struct {
-	ID       uuid.UUID `json:"ID"`
-	Title    string    `json:"Title"`
-	Priority Priority  `json:"Priority"`
-	Done     bool      `json:"Done"`
-}
-
-type TaskOperation struct {
-	Type     string
-	ID       uuid.UUID
-	Title    string
-	Priority Priority
-	Result   chan error
-}
-
 type InMemoryStore struct {
 	tasks       []Task
 	mu          sync.Mutex

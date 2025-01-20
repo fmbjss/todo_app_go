@@ -14,11 +14,10 @@ const (
 	port     = 5431
 	user     = "postgres"
 	password = ""
-	dbname   = "todo_app"
 )
 
 type PostgresStore struct {
-	db          *sql.DB
+	Db          *sql.DB
 	taskChannel chan TaskOperation
 	stopChannel chan struct{}
 }
@@ -27,7 +26,7 @@ func NewPostgresStore(config Config) (*PostgresStore, error) {
 
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
+		host, port, user, password, config.DBName)
 
 	db, err := sql.Open("postgres", psqlInfo)
 
@@ -41,7 +40,7 @@ func NewPostgresStore(config Config) (*PostgresStore, error) {
 	}
 
 	store := &PostgresStore{
-		db:          db,
+		Db:          db,
 		taskChannel: make(chan TaskOperation),
 		stopChannel: make(chan struct{}),
 	}
@@ -63,11 +62,11 @@ func NewPostgresStore(config Config) (*PostgresStore, error) {
 }
 
 func (s *PostgresStore) GetAllItems() ([]Task, error) {
-	if s.db == nil {
+	if s.Db == nil {
 		log.Println("s.db == nil")
 		return nil, fmt.Errorf("database connection is not initialized")
 	}
-	rows, err := s.db.Query("SELECT * FROM tasks")
+	rows, err := s.Db.Query("SELECT * FROM tasks")
 	if err != nil {
 		log.Fatal(err)
 		return nil, err
@@ -105,42 +104,47 @@ func (s *PostgresStore) processTasks() error {
 			switch op.Type {
 
 			case "Add":
-				_, err := s.db.Exec("INSERT INTO tasks (id, title, priority, done) VALUES ($1, $2, $3, $4)", op.ID, op.Title, op.Priority, false)
+				//log.Printf("Processing Task = [%s]: %v | Priority: %v | UUID: %v", op.Type, op.Title, op.Priority, op.ID)
+				_, err := s.Db.Exec("INSERT INTO tasks (id, title, priority, done) VALUES ($1, $2, $3, $4)", op.ID, op.Title, op.Priority, false)
 				if err != nil {
-					log.Printf("Error adding task: %v", err)
+					log.Printf("Error | Failed to add empty task : [%v]\n", op.Title)
+				} else {
+					log.Printf("Added task [%s]: %v", op.ID, op.Title)
 				}
+
 				op.Result <- err
-				close(op.Result)
 
 			case "Delete":
-				_, err := s.db.Exec("DELETE FROM tasks WHERE id = $1", op.ID)
+				_, err := s.Db.Exec("DELETE FROM tasks WHERE id = $1", op.ID)
 				if err != nil {
 					log.Printf("Error deleting task: %v", err)
 				}
 				op.Result <- err
-				close(op.Result)
 
 			case "Edit":
-				_, err := s.db.Exec("UPDATE tasks SET title = $1 WHERE id = $2", op.Title, op.ID)
+				_, err := s.Db.Exec("UPDATE tasks SET title = $1 WHERE id = $2", op.Title, op.ID)
 				if err != nil {
 					log.Printf("Error editing task: %v", err)
 				}
 				op.Result <- err
-				close(op.Result)
 
 			case "ToggleDone":
-				_, err := s.db.Exec("UPDATE tasks SET done = NOT done WHERE id = $1", op.ID)
+				_, err := s.Db.Exec("UPDATE tasks SET done = NOT done WHERE id = $1", op.ID)
 				if err != nil {
 					log.Printf("Error toggling task done status: %v", err)
 				}
 				op.Result <- err
-				close(op.Result)
 
+			}
+
+			if op.Result != nil {
+
+				close(op.Result)
 			}
 
 		case <-s.stopChannel:
 			close(s.taskChannel)
-			err := s.db.Close()
+			err := s.Db.Close()
 			if err != nil {
 
 			}
@@ -201,6 +205,6 @@ func (s *PostgresStore) initSchema() error {
 		priority TEXT NOT NULL CHECK (priority IN ('Low', 'Medium', 'High')),
 		done BOOLEAN NOT NULL
 	)`
-	_, err := s.db.Exec(query)
+	_, err := s.Db.Exec(query)
 	return err
 }
