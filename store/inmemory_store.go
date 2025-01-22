@@ -18,7 +18,7 @@ type InMemoryStore struct {
 	filePath    string
 }
 
-func NewInMemoryStore(config Config) *InMemoryStore {
+func NewInMemoryStore(config Config) (*InMemoryStore, error) {
 	store := &InMemoryStore{
 		tasks:       []Task{},
 		taskChannel: make(chan TaskOperation),
@@ -29,7 +29,7 @@ func NewInMemoryStore(config Config) *InMemoryStore {
 		store.loadTasksFromFile()
 	}
 	go store.processTasks()
-	return store
+	return store, nil
 }
 
 func (s *InMemoryStore) GetAllItems() ([]Task, error) {

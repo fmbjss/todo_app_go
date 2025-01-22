@@ -15,8 +15,8 @@ func main() {
 
 	c := store.Config{LoadFromFile: true, DBName: "todo_app"}
 
-	//s := store.NewInMemoryStore(c)
 	s, _ := store.NewPostgresStore(c)
+	//s, _ := store.NewInMemoryStore(c)
 
 	go server.Start(s)
 

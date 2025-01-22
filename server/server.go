@@ -73,7 +73,7 @@ func (s *TaskServer) addTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	s.renderTasksPage(w)
 }
 
 func (s *TaskServer) deleteTask(w http.ResponseWriter, r *http.Request) {
@@ -93,7 +93,7 @@ func (s *TaskServer) deleteTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	s.renderTasksPage(w)
 }
 
 func (s *TaskServer) toggleDone(w http.ResponseWriter, r *http.Request) {
@@ -113,7 +113,7 @@ func (s *TaskServer) toggleDone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	s.renderTasksPage(w)
 }
 
 func (s *TaskServer) edit(w http.ResponseWriter, r *http.Request) {
@@ -134,7 +134,7 @@ func (s *TaskServer) edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	s.renderTasksPage(w)
 }
 
 func Start(store store.Store) {

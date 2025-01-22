@@ -104,7 +104,6 @@ func (s *PostgresStore) processTasks() error {
 			switch op.Type {
 
 			case "Add":
-				//log.Printf("Processing Task = [%s]: %v | Priority: %v | UUID: %v", op.Type, op.Title, op.Priority, op.ID)
 				_, err := s.Db.Exec("INSERT INTO tasks (id, title, priority, done) VALUES ($1, $2, $3, $4)", op.ID, op.Title, op.Priority, false)
 				if err != nil {
 					log.Printf("Error | Failed to add empty task : [%v]\n", op.Title)
@@ -118,6 +117,8 @@ func (s *PostgresStore) processTasks() error {
 				_, err := s.Db.Exec("DELETE FROM tasks WHERE id = $1", op.ID)
 				if err != nil {
 					log.Printf("Error deleting task: %v", err)
+				} else {
+					log.Printf("Deleted task [%s]: %v", op.ID, op.Title)
 				}
 				op.Result <- err
 
@@ -125,6 +126,8 @@ func (s *PostgresStore) processTasks() error {
 				_, err := s.Db.Exec("UPDATE tasks SET title = $1 WHERE id = $2", op.Title, op.ID)
 				if err != nil {
 					log.Printf("Error editing task: %v", err)
+				} else {
+					log.Printf("Edited task [%s]: %v", op.ID, op.Title)
 				}
 				op.Result <- err
 
@@ -138,7 +141,6 @@ func (s *PostgresStore) processTasks() error {
 			}
 
 			if op.Result != nil {
-
 				close(op.Result)
 			}
 
@@ -146,7 +148,7 @@ func (s *PostgresStore) processTasks() error {
 			close(s.taskChannel)
 			err := s.Db.Close()
 			if err != nil {
-
+				log.Println("Error closing db")
 			}
 			return nil
 		}
